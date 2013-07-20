@@ -73,7 +73,3 @@
 (assert (successful? (parse (many1 digit) "1aa2")))
 (assert (equal? '(#\1) (value (parse (many1 digit) "1aa2"))))
 
-(display (parse (str "string") "string"))
-(newline)
-(display (value (parse (str "string") "string")))
-(newline)

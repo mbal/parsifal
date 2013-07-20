@@ -46,6 +46,7 @@
 ;; successful if the first character of the input satisfies
 ;; the predicate. 
 ;; idea: satisfy accept an optional error message, on unexpected-input
+;; satisfy :: (Char -> Bool) -> Parser Char
 (defparser ((satisfy pred) state)
   (let ((data (input state)))
     (if (eof? data)
@@ -56,11 +57,12 @@
         (unexpected-input (car data) state)))))
 
 ;; runs p1 and, if successful, runs p2.
-;; is the sequence combinator associative?
-;; yes, it is.
-;; EQUIVALENT TO >> (and to p1 >>= \x . p2)
-;; (define sequence (bind p1 (lambda (x) p2)))
-(defparser ((sequence (& >>) p1 p2) state)
+;; is the then combinator associative?
+;; EQUIVALENT TO haskell's >> (and to p1 >>= \x . p2)
+;; (define then (bind p1 (lambda (x) p2)))
+;; If then is *really* equivalent to >>, then is associative, as it
+;; follows from the monads laws.
+(defparser ((then (& >>) p1 p2) state)
   (let ((result1 (p1 state)))
     (if (successful? result1)
       (let ((result2 (p2 result1)))
@@ -68,6 +70,7 @@
                            (and (empty? result2) (empty? result1))))
       result1)))
 
+;; bind :: Parser a -> (a -> Parser b) -> Parser b
 (defparser ((bind (& >>=) p1 f) state)
   (let ((result1 (p1 state)))
     (if (successful? result1)
@@ -85,6 +88,9 @@
       (p2 state)
       result1)))
 
+;; kleene star operator.
+;; many :: Parser a -> Parser [a]
+;; basically, it allows to transform character parsers to string parsers.
 (defparser ((many p) state)
   (let loop ((s state) (acc '()))
     (let ((result (p s)))
@@ -94,6 +100,7 @@
           (make-state (input result) (position result)
                       (reverse acc) (empty? state) #f))))))
 
+;; kleene plus
 (defparser ((many1 p) state)
   ;; yep. But I don't like it very much
   ;  (bind p (lambda (x) 
@@ -107,8 +114,6 @@
                            (cons (value result) (value result2))))
       result)))
 
-;
-;
 ;; (try p) behaves like p, but, on failing, it pretends that nothing
 ;; happened.
 (defparser ((try p) state)
@@ -127,15 +132,32 @@
 (define anychar (satisfy (constantly #t)))
 (define digit (satisfy char-numeric?))
 
-;; just plain ugly.
+;; ok, it seems that parser combinators form a monad. (gonad?)
+;; can we exploit this fact to improve the functions defined till
+;; now?
+
+;; just plain ugly. Yes, folding over `then` could improve the code
+;; a bit.
+;;
+;; (mapM char s)
+;; (sequence (map char s))
+
+;this version doesn't care about errors, but should be easily repaired
+;(defparser ((str s) state)
+;  (foldl (lambda (x y) (y x)) state 
+;         (map-string (lambda (x) (char x)) s)))
+
+(define (map-string f l)
+  (map f (string->list l)))
+
 (define (str s)
   (if (equal? s "")
     (succeed "")
     (let ((c (string-ref s 0))
           (cs (substring s 1 (string-length s))))
-      (sequence
+      (then
         (char c)
-        (sequence
+        (then
           (str cs)
           (succeed (string-append1 c cs)))))))
 
@@ -144,4 +166,10 @@
 
 (define (parse P input)
   (P (make-state (string->list input) 0 '() #t #f)))
+
+(define (listify x) 
+  (if (list? x) x (list x)))
+
+(define (run P input)
+  (map (lambda (x) (list->string (listify x))) (listify (value (parse P input)))))
 
