@@ -45,7 +45,6 @@
 
 ;; successful if the first character of the input satisfies
 ;; the predicate. 
-;; idea: satisfy accept an optional error message, on unexpected-input
 ;; satisfy :: (Char -> Bool) -> Parser Char
 (defparser ((satisfy pred) state)
   (let ((data (input state)))
@@ -98,7 +97,8 @@
         (loop result (cons (value result) acc))
         (if (empty? result)
           (make-state (input result) (position result)
-                      (reverse acc) (empty? state) #f))))))
+                      (reverse acc) (empty? state) #f)
+          result)))))
 
 ;; kleene plus
 (defparser ((many1 p) state)
@@ -114,6 +114,17 @@
                            (cons (value result) (value result2))))
       result)))
 
+(defparser ((skipMany p) state) 
+  ((either 
+     (then p (skipMany p)) 
+     (succeed '())) 
+   state))
+
+(defparser ((skipMany1 p) state)
+  ((then
+    p
+    (skipMany p)) state))
+
 ;; (try p) behaves like p, but, on failing, it pretends that nothing
 ;; happened.
 (defparser ((try p) state)
@@ -126,11 +137,27 @@
 (defparser ((succeed v) state)
   (copy-state-except state value v))
 
+(define (sepBy1 p sep)
+  (bind p
+        (lambda (x)
+          (bind (many (then sep p))
+                (lambda (xs) (succeed (cons x xs)))))))
+
+(define (sepBy p sep)
+  (either (sepBy1 p sep)
+          (succeed '())))
+
 ;; simpler derived parsers
 (define (char c) (satisfy (lambda (x) (char=? c x))))
 (define letter (satisfy char-alphabetic?))
 (define anychar (satisfy (constantly #t)))
 (define digit (satisfy char-numeric?))
+(define (oneOf l) (satisfy (lambda (x) (member x l))))
+
+(define (word state)
+  (let ((result ((many1 letter) state)))
+    ;; do you want a word, right? Let's get back the result to a string
+    (copy-state-except result value (list->string (value result)))))
 
 ;; this version is very general, and, in fact, in Haskell the whole
 ;; thing is called mapM. We agree, however, that this is hardly an
@@ -145,6 +172,8 @@
 ;;                     (lambda (xs)
 ;;                       (succeed (string-append1 x xs)))))))
 ;;         (succeed "") (map-string char s)))
+;; The following version is more or less equivalent, and should be
+;; faster (but not as elegant as the Haskell mapM version)
 (define (str s)
   (foldr then (succeed s) (map-string char s)))
 
