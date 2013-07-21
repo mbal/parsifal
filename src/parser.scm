@@ -180,6 +180,24 @@
 (define (parse P input)
   (P (make-state (string->list input) 0 '() #t #f)))
 
+(define (prettify x)
+  (define (loop xs acc)
+    (cond ((null? xs) (reverse acc))
+          ((list? (car xs)) 
+           (loop (cdr xs) (cons (loop (car xs)) acc)))
+          ((string? (car xs)) 
+           (loop (cdr xs) (cons (car xs) acc)))
+          ((char? (car xs)) 
+           (loop (cdr xs) (cons (string (car xs)) acc)))
+          ((number? (car x)) 
+           (loop (cdr xs) (cons (number->string (car xs)) acc)))
+        (else 
+          (loop (cdr xs) acc))))
+  (apply string-append (intersperse (loop x '()) " ")))
+
 (define (run P input)
-  (listify (value (parse P input))))
+  (let ((result (parse P input)))
+    (if (successful? result)
+      (listify (value result))
+      (prettify (error result)))))
 
