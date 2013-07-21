@@ -103,10 +103,10 @@
 ;; kleene plus
 (defparser ((many1 p) state)
   ;; yep. But I don't like it very much
-  ;  (bind p (lambda (x) 
-  ;            (bind (many p)
-  ;                  (lambda (y) 
-  ;                    (succeed (foldr cons (list x) y))))))
+  ;;  (bind p (lambda (x) 
+  ;;            (bind (many p)
+  ;;                  (lambda (y) 
+  ;;                    (succeed (foldr cons (list x) y))))))
   (let ((result (p state)))
     (if (successful? result)
       (let ((result2 ((many p) result)))
@@ -132,44 +132,25 @@
 (define anychar (satisfy (constantly #t)))
 (define digit (satisfy char-numeric?))
 
-;; ok, it seems that parser combinators form a monad. (gonad?)
-;; can we exploit this fact to improve the functions defined till
-;; now?
-
-;; just plain ugly. Yes, folding over `then` could improve the code
-;; a bit.
-;;
-;; (mapM char s)
-;; (sequence (map char s))
-
-;this version doesn't care about errors, but should be easily repaired
-;(defparser ((str s) state)
-;  (foldl (lambda (x y) (y x)) state 
-;         (map-string (lambda (x) (char x)) s)))
-
-(define (map-string f l)
-  (map f (string->list l)))
-
+;; this version is very general, and, in fact, in Haskell the whole
+;; thing is called mapM. We agree, however, that this is hardly an
+;; improvement over the previous version. The only good thing is the
+;; lack of explicit recursion, but since we are schemers, we don't
+;; care about it very much
+;; (foldr (lambda (m n)
+;;           (bind
+;;             (lambda (s1) (m s1))
+;;             (lambda (x) 
+;;               (bind (lambda (s1) (n s1))
+;;                     (lambda (xs)
+;;                       (succeed (string-append1 x xs)))))))
+;;         (succeed "") (map-string char s)))
 (define (str s)
-  (if (equal? s "")
-    (succeed "")
-    (let ((c (string-ref s 0))
-          (cs (substring s 1 (string-length s))))
-      (then
-        (char c)
-        (then
-          (str cs)
-          (succeed (string-append1 c cs)))))))
-
-(define (string-append1 c s)
-  (list->string (cons c (string->list s))))
+  (foldr then (succeed s) (map-string char s)))
 
 (define (parse P input)
   (P (make-state (string->list input) 0 '() #t #f)))
 
-(define (listify x) 
-  (if (list? x) x (list x)))
-
 (define (run P input)
-  (map (lambda (x) (list->string (listify x))) (listify (value (parse P input)))))
+  (listify (value (parse P input))))
 
