@@ -1,4 +1,8 @@
+(module example ()
+  (import parser chicken r5rs)
+
 ;; NOTE : I am still working on the syntax
+
 
 (define (displayln x) (display x) (newline))
 
@@ -45,8 +49,9 @@
 ;; PUNCT -> , | . | space | ! | ;
 ;; WORD -> CHARACTER*
 ;; WORDS -> (WORD PUNCT*)*
-(define punct (oneOf '(#\, #\space #\. #\! #\;))) ;; equivalent to either
-(define words (sepBy1 word (skipMany1 punct)))
+(define punct (one-of '(#\, #\space #\. #\! #\;))) ;; equivalent to either
+(define words (sep-by1 word (skip-many1 punct)))
 
 (displayln (parse words "words,. Words;words")) 
 ;;; ==> ("words" "Words" "words")
+)

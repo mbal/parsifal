@@ -1,3 +1,9 @@
+(module parser
+  (successful? value error many1 many sep-by sep-by1 either then bind
+               word run str try succeed digit anychar parse char
+               one-of skip-many skip-many1)
+
+  (import chicken r5rs utils data-structures)
 ;; first of all, what is a combinator?
 ;; a combinator is a higher-order function that has not a free variable in it
 ;;
@@ -32,16 +38,37 @@
 
 ;; allows to define parser combinators and defines alternatives names for the
 ;; function (using the symbol &)
+;;
+;; USAGE:
+;; (defparser ((NAME (& OTHERNAMES) P1 P2) STATE)
+;;    BODY)
+;; The whole (& OTHERNAMES) is optional.
+;; It's possible to define a parser through the . notation, which means
+;; that the parser will `reduce' (fold) the body of the function over the 
+;; list of parameters.
+;; For example, (>> a b c d e) == (fold >> (a b c d e)) ==
+;;              (>> (>> (>> (>> a b) c) d) e)
 (define-syntax defparser
   (syntax-rules (&)
-    ((defparser ((name (& altnames ...) params ...) state) body)
+    ((defparser ((name (& altname altnames ...) params ...) state) body)
      (begin
-       (define (name params ...)
-         (lambda (state) body))
+       (defparser ((name params ...) state) body)
+       (define altname name)
+       (define altnames name) ...))
+    ((defparser ((name (& altname altnames ...) p q . rest) state) body)
+     (begin
+       (defparser ((name p q . rest) state) body)
+       (define altname name)
        (define altnames name) ...))
     ((defparser ((name params ...) state) body)
      (define (name params ...)
-       (lambda (state) body)))))
+       (lambda (state) body)))
+    ((defparser ((name p q . rest) state) body)
+     (define name
+       (case-lambda
+         ((p q) (lambda (state) body))
+         ((p q . rest)
+          (reduce2 name (append (list p q) rest))))))))
 
 ;; successful if the first character of the input satisfies
 ;; the predicate. 
@@ -114,16 +141,16 @@
                            (cons (value result) (value result2))))
       result)))
 
-(defparser ((skipMany p) state) 
+(defparser ((skip-many p) state) 
   ((either 
-     (then p (skipMany p)) 
+     (then p (skip-many p)) 
      (succeed '())) 
    state))
 
-(defparser ((skipMany1 p) state)
+(defparser ((skip-many1 p) state)
   ((then
     p
-    (skipMany p)) state))
+    (skip-many p)) state))
 
 ;; (try p) behaves like p, but, on failing, it pretends that nothing
 ;; happened.
@@ -137,14 +164,14 @@
 (defparser ((succeed v) state)
   (copy-state-except state value v))
 
-(define (sepBy1 p sep)
+(define (sep-by1 p sep)
   (bind p
         (lambda (x)
           (bind (many (then sep p))
                 (lambda (xs) (succeed (cons x xs)))))))
 
-(define (sepBy p sep)
-  (either (sepBy1 p sep)
+(define (sep-by p sep)
+  (either (sep-by1 p sep)
           (succeed '())))
 
 ;; simpler derived parsers
@@ -152,7 +179,7 @@
 (define letter (satisfy char-alphabetic?))
 (define anychar (satisfy (constantly #t)))
 (define digit (satisfy char-numeric?))
-(define (oneOf l) (satisfy (lambda (x) (member x l))))
+(define (one-of l) (satisfy (lambda (x) (member x l))))
 
 (define (word state)
   (let ((result ((many1 letter) state)))
@@ -200,4 +227,4 @@
     (if (successful? result)
       (listify (value result))
       (prettify (error result)))))
-
+)
