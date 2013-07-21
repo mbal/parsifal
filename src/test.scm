@@ -7,7 +7,7 @@
 (assert (not (successful? (parse digit "a"))))
 (assert (successful? (parse digit "0")))
 
-(define open-close (sequence (char #\[) (char #\])))
+(define open-close (then (char #\[) (char #\])))
 (assert (successful? (parse open-close "[]")))
 (assert (successful? (parse open-close "[])")))
 (assert (not (successful? (parse open-close "[[]"))))
@@ -20,9 +20,9 @@
 
 (define parens
   (either
-    (sequence (char #\()
-              (sequence (lambda (x) (parens x))
-                        (sequence (char #\))
+    (then (char #\()
+              (then (lambda (x) (parens x))
+                        (then (char #\))
                                   (lambda (x) (parens x)))))
     (succeed '())))
 
@@ -35,24 +35,24 @@
 (assert (not (successful? (parse parens "(()()"))))
 
 (define aorb-bogus
-  (either (sequence (char #\[) (char #\a))
-          (sequence (char #\[) (char #\b))))
+  (either (then (char #\[) (char #\a))
+          (then (char #\[) (char #\b))))
 (assert (not (successful? (parse aorb-bogus "[b"))))
 (assert (successful? (parse aorb-bogus "[a")))
 
 (define aorb-right
-  (either (try (sequence (char #\[) (char #\a)))
-          (sequence (char #\[) (char #\b))))
+  (either (try (then (char #\[) (char #\a)))
+          (then (char #\[) (char #\b))))
 
 (assert (successful? (parse aorb-right "[b")))
 (assert (successful? (parse aorb-right "[a")))
 
 (define parensbind
   (either
-    (sequence (char #\()
+    (then (char #\()
               (bind (lambda (x) (parensbind x))
                     (lambda (n) 
-                      (sequence 
+                      (then 
                         (char #\))
                         (bind (lambda (x) (parensbind x))
                               (lambda (m) (succeed (max m (+ n 1)))))))))
