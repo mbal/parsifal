@@ -1,4 +1,4 @@
-(module utils (map-string string-append1 listify reduce2)
+(module utils (map-string string-append1 listify reduce2 list->number)
   (import r5rs chicken)
 
   ;; map on strings. To me, this is one of the biggest problem in scheme:
@@ -16,6 +16,9 @@
   ;; a normal foldl
   (define (reduce2 f l)
     (foldl f (f (car l) (cadr l)) (cddr l)))
+
+  (define (list->number l)
+    (string->number (list->string l)))
 
   (define (listify x) 
     (if (list? x) x (list x))))
