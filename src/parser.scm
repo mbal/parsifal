@@ -1,7 +1,7 @@
 (module parser
   (successful? value error many1 many sep-by sep-by1 either then bind
                word run str try succeed digit anychar parse char
-               one-of skip-many skip-many1)
+               one-of skip-many skip-many1 hask-do let*-bind)
 
   (import chicken r5rs utils data-structures)
 ;; first of all, what is a combinator?
@@ -70,6 +70,26 @@
          ((p q . rest)
           (reduce2 name (append (list p q) rest))))))))
 
+(define-syntax let*-bind
+  (syntax-rules (_)
+    ((let*-bind ((_ y)) body)
+     (then y body))
+    ((let*-bind ((_ y) whatever ...) body)
+     (then y (let*-bind (whatever ...) body)))
+    ((let*-bind ((x y)) body)
+     (bind y (lambda (x) body)))
+    ((let*-bind ((x y) (x2 y2) ...) body)
+     (bind y (lambda (x) (let*-bind ((x2 y2) ...) body))))))
+
+(define-syntax hask-do
+  (syntax-rules (<-)
+    ((hask-do (x <- parser) body)
+     (bind parser (lambda (x) body)))
+    ((hask-do (x1 <- parser1) rest ...)
+     (bind parser1 (lambda (x1) (hask-do rest ...))))
+    ((hask-do parser body ...)
+     (then parser (hask-do body ...)))))
+
 ;; successful if the first character of the input satisfies
 ;; the predicate. 
 ;; satisfy :: (Char -> Bool) -> Parser Char
@@ -86,9 +106,8 @@
 ;; is the then combinator associative?
 ;; EQUIVALENT TO haskell's >> (and to p1 >>= \x . p2)
 ;; (define then (bind p1 (lambda (x) p2)))
-;; If then is *really* equivalent to >>, then is associative, as it
-;; follows from the monads laws.
-(defparser ((then (& >>) p1 p2) state)
+;; Is associative, as it follows from the monads laws.
+(defparser ((then (& >>) p1 p2 . more) state)
   (let ((result1 (p1 state)))
     (if (successful? result1)
       (let ((result2 (p2 result1)))
@@ -97,7 +116,7 @@
       result1)))
 
 ;; bind :: Parser a -> (a -> Parser b) -> Parser b
-(defparser ((bind (& >>=) p1 f) state)
+(defparser ((bind (& >>=) p1 f . more) state)
   (let ((result1 (p1 state)))
     (if (successful? result1)
       (let ((result2 ((f (value result1)) result1)))
@@ -141,16 +160,17 @@
                            (cons (value result) (value result2))))
       result)))
 
+;; this parser is recursive, and we are in a strict language. We wrap
+;; the code in a lambda, otherwise, it will never stop.
 (defparser ((skip-many p) state) 
   ((either 
-     (then p (skip-many p)) 
-     (succeed '())) 
-   state))
+    (then p (skip-many p))
+    (succeed '())) state))
 
-(defparser ((skip-many1 p) state)
-  ((then
+(define (skip-many1 p)
+  (then
     p
-    (skip-many p)) state))
+    (skip-many p)))
 
 ;; (try p) behaves like p, but, on failing, it pretends that nothing
 ;; happened.
@@ -165,10 +185,18 @@
   (copy-state-except state value v))
 
 (define (sep-by1 p sep)
-  (bind p
-        (lambda (x)
-          (bind (many (then sep p))
-                (lambda (xs) (succeed (cons x xs)))))))
+  (let*-bind ((x p) (xs (many (then sep p))))
+             (succeed (cons x xs))))
+
+;(define (sep-by1 p sep)
+;  (let*-bind ((x p) (xs (many (then sep p))))
+;    (succeed x xs)))
+
+;(define (sep-by1 p sep)
+;  (let*-bind
+;    (x  <- p)
+;    (xs <- (many (then sep p)))
+;    (succeed (cons x xs))))
 
 (define (sep-by p sep)
   (either (sep-by1 p sep)
