@@ -1,5 +1,5 @@
-(module state (successful? make-state copy-state-except
-               input position value empty? error)
+(module state 
+  (successful? make-state copy-state-except input position value empty? error)
 
   (import r5rs chicken)
 

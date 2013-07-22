@@ -1,5 +1,5 @@
 (module test (run-all)
-  (import r5rs chicken parser)
+  (import r5rs chicken parser state)
 
   (define (run-all)
     (define simple-parser (char #\a))

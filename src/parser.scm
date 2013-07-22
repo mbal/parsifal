@@ -1,17 +1,10 @@
 (module parser
-  (successful? value error many1 many sep-by sep-by1 either then bind
-               word run str try succeed digit anychar parse char
-               one-of skip-many skip-many1 named-bind <?> eof number
-               defparser)
+  (many1 many sep-by sep-by1 either then bind word run str try succeed digit
+         anychar parse char one-of skip-many skip-many1 named-bind <?> eof
+         number defparser) 
 
   (import chicken r5rs data-structures)
-
   (import utils state)
-  ;; first of all, what is a combinator?
-  ;; a combinator is a higher-order function that has not a free variable in it
-  ;;
-
-  (define (eof? x) (equal? x '()))
 
   (define (unexpected-input in state)
     (make-state (input state) (position state)
@@ -92,6 +85,8 @@
              (if (successful? result)
                result
                (copy-state-except result error (list err)))))
+
+  (define (eof? x) (equal? x '()))
 
   ;; successful if the first character of the input satisfies
   ;; the predicate. 
@@ -197,16 +192,6 @@
       (x <- p)
       (xs <- (many (then sep p)))
       (succeed (cons x xs))))
-
-  ;(define (sep-by1 p sep)
-  ;  (let*-bind ((x p) (xs (many (then sep p))))
-  ;    (succeed x xs)))
-
-  ;(define (sep-by1 p sep)
-  ;  (let*-bind
-  ;    (x  <- p)
-  ;    (xs <- (many (then sep p)))
-  ;    (succeed (cons x xs))))
 
   (define (sep-by p sep)
     (either (sep-by1 p sep)
