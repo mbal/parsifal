@@ -1,7 +1,7 @@
 (module parser
   (successful? value error many1 many sep-by sep-by1 either then bind
                word run str try succeed digit anychar parse char
-               one-of skip-many skip-many1 hask-do let*-bind)
+               one-of skip-many skip-many1 named-bind <?> eof)
 
   (import chicken r5rs utils data-structures)
 ;; first of all, what is a combinator?
@@ -70,25 +70,23 @@
          ((p q . rest)
           (reduce2 name (append (list p q) rest))))))))
 
-(define-syntax let*-bind
-  (syntax-rules (_)
-    ((let*-bind ((_ y)) body)
-     (then y body))
-    ((let*-bind ((_ y) whatever ...) body)
-     (then y (let*-bind (whatever ...) body)))
-    ((let*-bind ((x y)) body)
-     (bind y (lambda (x) body)))
-    ((let*-bind ((x y) (x2 y2) ...) body)
-     (bind y (lambda (x) (let*-bind ((x2 y2) ...) body))))))
-
-(define-syntax hask-do
+;;; transforms this:
+;;; (bind anychar (lambda (c) (char c))) into this:
+;;; (named-bind (c <- anychar) (char c))
+(define-syntax named-bind
   (syntax-rules (<-)
-    ((hask-do (x <- parser) body)
+    ((named-bind (x <- parser) body)
      (bind parser (lambda (x) body)))
-    ((hask-do (x1 <- parser1) rest ...)
-     (bind parser1 (lambda (x1) (hask-do rest ...))))
-    ((hask-do parser body ...)
-     (then parser (hask-do body ...)))))
+    ((named-bind (x1 <- parser1) rest ...)
+     (bind parser1 (lambda (x1) (named-bind rest ...))))
+    ((named-bind parser body ...)
+     (then parser (named-bind body ...)))))
+
+(defparser ((<?> p err) state)
+  (let ((result (p state)))
+    (if (successful? result)
+      result
+      (copy-state-except result error (list err)))))
 
 ;; successful if the first character of the input satisfies
 ;; the predicate. 
@@ -101,6 +99,11 @@
         (make-state (cdr data) (+ 1 (position state))
                     (car data) #f #f)
         (unexpected-input (car data) state)))))
+
+(define (eof state)
+  (if (eof? (input state))
+    state
+    (unexpected-input (car (input state)) state)))
 
 ;; runs p1 and, if successful, runs p2.
 ;; is the then combinator associative?
@@ -185,8 +188,10 @@
   (copy-state-except state value v))
 
 (define (sep-by1 p sep)
-  (let*-bind ((x p) (xs (many (then sep p))))
-             (succeed (cons x xs))))
+  (named-bind 
+    (x <- p)
+    (xs <- (many (then sep p)))
+    (succeed (cons x xs))))
 
 ;(define (sep-by1 p sep)
 ;  (let*-bind ((x p) (xs (many (then sep p))))

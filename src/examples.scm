@@ -54,7 +54,7 @@
 
 (define nesting
   (either
-    (hask-do
+    (named-bind
       (char #\()
       (n <- (lambda (x) (nesting x)))
       (char #\))
@@ -67,32 +67,6 @@
 (displayln (run nesting "(()"))     ;;; ==> unexpected EOF
 (displayln (run nesting "(r)"))     ;;; ==> unexpected r
 
-(displayln "count the nesting level of parens part 2")
-
-(define nesting
-  (either
-    (let*-bind
-      ((_ (char #\())
-       (n (lambda (x) (nesting x)))
-       (_ (char #\)))
-       (m (lambda (x) (nesting x))))
-      (succeed (max m (+ 1 n))))
-    (succeed 0)))
-
-;(define nesting
-;  (either
-;    (let*-bind
-;      ((char #\()
-;       (n : (lambda (x) (nesting x)))
-;       (char #\))
-;       (m : (lambda (x) (nesting x)))))
-;      (succeed (max m (+ 1 n))))
-;    (succeed 0)))
-
-(displayln (run nesting "((()))"))  ;;; ==> ok, 3
-(displayln (run nesting "()()()"))  ;;; ==> ok, 1
-(displayln (run nesting "(()"))     ;;; ==> unexpected EOF
-(displayln (run nesting "(r)"))     ;;; ==> unexpected r
 ;; split the words at the tokens
 ;; PUNCT -> , | . | space | ! | ;
 ;; WORD -> CHARACTER*
