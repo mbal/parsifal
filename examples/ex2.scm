@@ -6,13 +6,13 @@
   ;; count the nesting level of parens
   (displayln "count the nesting level of parens")
 
-  (define nesting
+  (defparser nesting
     (either
       (named-bind
         (char #\()
-        (n <- (lambda (x) (nesting x)))
+        (n <- nesting) 
         (char #\))
-        (m <- (lambda (x) (nesting x)))
+        (m <- nesting)
         (succeed (max m (+ 1 n))))
       (succeed 0)))
 

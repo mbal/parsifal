@@ -1,7 +1,7 @@
 (module parser
   (many1 many sep-by sep-by1 either then bind word run str try succeed digit
          anychar parse char one-of skip-many skip-many1 named-bind <?> eof
-         number defparser) 
+         number defparser >> >>=) 
 
   (import chicken r5rs data-structures)
   (import utils state)
@@ -13,6 +13,8 @@
   (define (unexpected sym state)
     (make-state (input state) (position state)
                 (value state) #t (list "unexpected" sym)))
+
+  (define (eof? x) (equal? x '()))
 
   ;; allows to define a combinator and defines alternatives names for the
   ;; function (using the symbol &). A combinator is a (partially curried)
@@ -63,6 +65,8 @@
        (bind parser (lambda (x) body)))
       ((named-bind (x1 <- parser1) rest ...)
        (bind parser1 (lambda (x1) (named-bind rest ...))))
+      ((named-bind parser body)
+       (then parser body))
       ((named-bind parser body ...)
        (then parser (named-bind body ...)))))
 
@@ -80,13 +84,12 @@
          (lambda (state)
            ((body ...) state))))))
 
+  ;; runs p and, if not successful, returns the specified error.
   (defcomb ((<?> p err) state)
            (let ((result (p state)))
              (if (successful? result)
                result
                (copy-state-except result error (list err)))))
-
-  (define (eof? x) (equal? x '()))
 
   ;; successful if the first character of the input satisfies
   ;; the predicate. 
@@ -99,11 +102,6 @@
                  (make-state (cdr data) (+ 1 (position state))
                              (car data) #f #f)
                  (unexpected-input (car data) state)))))
-
-  (define (eof state)
-    (if (eof? (input state))
-      state
-      (unexpected-input (car (input state)) state)))
 
   ;; runs p1 and, if successful, runs p2.
   ;; is the then combinator associative?
@@ -161,7 +159,7 @@
                (let ((result2 ((many p) result)))
                  (copy-state-except result2 value
                                     (cons (value result) (value result2))))
-               result)))
+               (copy-state-except result value (value result)))))
 
   ;; this parser is recursive, and we are in a strict language. We wrap
   ;; the code in a lambda, otherwise, it will never stop.
@@ -214,8 +212,10 @@
 
   (define (word state)
     (let ((result ((many1 letter) state)))
+      (if (successful? result)
+        (copy-state-except result value (list->string (value result)))
+        result)))
       ;; do you want a word, right? Let's get back the result to a string
-      (copy-state-except result value (list->string (value result)))))
 
   ;; this version is very general, and, in fact, in Haskell the whole
   ;; thing is called mapM. We agree, however, that this is hardly an
@@ -234,6 +234,14 @@
   ;; faster (but not as elegant as the Haskell mapM version)
   (define (str s)
     (foldr then (succeed s) (map-string char s)))
+
+  ;; matches if the input ends at the position
+  (define (eof state)
+    (if (eof? (input state))
+      state
+      (unexpected-input (car (input state)) state)))
+
+  ;; ------------------------------------
 
   (define (parse P input)
     (P (make-state (string->list input) 0 '() #t #f)))

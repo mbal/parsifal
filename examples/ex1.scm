@@ -6,10 +6,10 @@
   ;; to match couple of parenthesis we use the following grammar:
   ;; S -> [S] | empty
   (displayln "correctly nested parenthesis")
-  (define single-parens
+  (defparser single-parens
     (either
       (then (char #\[)
-            (lambda (x) (single-parens x))
+            single-parens
             (char #\]))
       (succeed '())))
 
@@ -32,12 +32,12 @@
   ;;
   ;; S -> (S)S | empty
   (displayln "correctly nested parenthesis part 2")
-  (define parens
+  (defparser parens
     (either
       (then (char #\()
-            (lambda (x) (parens x))
+            parens
             (char #\))
-            (lambda (x) (parens x)))
+            parens)
       (succeed '())))
 
   (displayln (parse parens "((()))"))  ;;; ==> ok
