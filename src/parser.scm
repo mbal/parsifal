@@ -1,7 +1,7 @@
 (module parser
   (many1 many sep-by sep-by1 either then bind word run str try succeed digit
          anychar parse char one-of skip-many skip-many1 named-bind <?> eof
-         number defparser >> >>=) 
+         number defparser >> >>= letter)
 
   (import chicken r5rs data-structures)
   (import utils state)
