@@ -148,25 +148,24 @@
                    result)))))
 
   ;; kleene plus
-  (defcomb ((many1 p) state)
-           ;; yep. But I don't like it very much
-           ;;  (bind p (lambda (x) 
-           ;;            (bind (many p)
-           ;;                  (lambda (y) 
-           ;;                    (succeed (foldr cons (list x) y))))))
-           (let ((result (p state)))
-             (if (successful? result)
-               (let ((result2 ((many p) result)))
-                 (copy-state-except result2 value
-                                    (cons (value result) (value result2))))
-               (copy-state-except result value (value result)))))
+  (defparser (many1 p)
+           (named-bind
+             (x <- p)
+             (y <- (many p))
+             (succeed (cons x y))))
 
-  ;; this parser is recursive, and we are in a strict language. We wrap
-  ;; the code in a lambda, otherwise, it will never stop.
-  (defcomb ((skip-many p) state) 
-           ((either 
-              (then p (skip-many p))
-              (succeed '())) state))
+  ;; TODO : rewrite using defparser
+  (defcomb ((skip-many p) state)
+           (let loop ((s state))
+             (let ((result (p s)))
+               (if (and (successful? result) (not (empty? result)))
+                 (loop result)
+                 (if (empty? result)
+                   (make-state (input result)
+                               (position result)
+                               '()
+                               #f #f)
+                   result)))))
 
   (define (skip-many1 p)
     (then
