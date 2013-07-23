@@ -68,7 +68,7 @@
   (displayln (run dec-number "+21")) ;; ==> 21
   (displayln (run dec-number "-21")) ;; ==> -21
   (displayln (run dec-number "42")) ;; ==> 42
-  (displayln (run dec-number "a42")) ;; ==> unexpected a
-  (displayln (run dec-number "+a42")) ;; ==> unexpected a
+  (displayln (run dec-number "a42")) ;; ==> expected number
+  (displayln (run dec-number "+a42")) ;; ==> expected number
 
   )
