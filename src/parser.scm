@@ -1,7 +1,7 @@
 (module parser
   (many1 many sep-by sep-by1 either then bind word run str try succeed digit
          anychar parse char one-of skip-many skip-many1 named-bind <?> eof
-         number defparser >> >>= letter)
+         number defparser >> >>= letter between)
 
   (import chicken r5rs data-structures)
   (import utils state)
@@ -116,6 +116,28 @@
                                     (and (empty? result2) (empty? result1))))
                result1)))
 
+  (defcomb ((between bra ket inside) state)
+           ;; yeah, pretty ugly. It's **almost** equivalent to
+           ;; (named-bind bra (x <- (many inside)) ket (succeed x)), but:
+           ;; (parse (between (char #\a) (char #\b) letter) "ajkbcdeb")
+           ;; returns "jk", while the named-bind version raises an
+           ;; unexpected EOF error.
+           (let ((start (bra state)))
+             (if (successful? start)
+               (let loop ((prev start) (parsed '()))
+                 (let ((end (ket prev)))
+                   (if (successful? end)
+                     (copy-state-except end value (reverse parsed))
+                     (let ((middle (inside prev)))
+                       (if (successful? middle)
+                         (loop middle (cons (value middle) parsed))
+                         middle)))))
+               (unexpected-input (car (input state)) state))))
+
+  ;; this is the return in the monad.
+  (defcomb ((succeed v) state)
+           (copy-state-except state value v))
+
   ;; bind :: Parser a -> (a -> Parser b) -> Parser b
   (defcomb ((bind (& >>=) p1 f . more) state)
            (let ((result1 (p1 state)))
@@ -137,6 +159,10 @@
   ;; kleene star operator.
   ;; many :: Parser a -> Parser [a]
   ;; basically, it allows to transform character parsers to string parsers.
+  ;; equivalent to:
+  ;; (either
+  ;;    (named-bind (x <- p) (xs <- (many p)) (succeed (cons x xs)))
+  ;;    (succeed '()))
   (defcomb ((many p) state)
            (let loop ((s state) (acc '()))
              (let ((result (p s)))
@@ -149,28 +175,23 @@
 
   ;; kleene plus
   (defparser (many1 p)
-           (named-bind
-             (x <- p)
-             (y <- (many p))
-             (succeed (cons x y))))
+             (named-bind
+               (x <- p)
+               (y <- (many p))
+               (succeed (cons x y))))
 
-  ;; TODO : rewrite using defparser
-  (defcomb ((skip-many p) state)
-           (let loop ((s state))
-             (let ((result (p s)))
-               (if (and (successful? result) (not (empty? result)))
-                 (loop result)
-                 (if (empty? result)
-                   (make-state (input result)
-                               (position result)
-                               '()
-                               #f #f)
-                   result)))))
 
-  (define (skip-many1 p)
-    (then
-      p
-      (skip-many p)))
+  (defparser (skip-many p)
+             (either
+               (then
+                 p
+                 (skip-many p))
+               (succeed '())))
+
+  (defparser (skip-many1 p)
+             (then
+               p
+               (skip-many p)))
 
   ;; (try p) behaves like p, but, on failing, it pretends that nothing
   ;; happened.
@@ -179,10 +200,6 @@
              (if (successful? result)
                result
                state)))
-
-  ;; this is the return in the monad.
-  (defcomb ((succeed v) state)
-           (copy-state-except state value v))
 
   (define (sep-by1 p sep)
     (named-bind 
@@ -214,11 +231,11 @@
       (if (successful? result)
         (copy-state-except result value (list->string (value result)))
         result)))
-      ;; do you want a word, right? Let's get back the result to a string
+  ;; do you want a word, right? Let's get back the result to a string
 
   ;; this version is very general, and, in fact, in Haskell the whole
-  ;; thing is called mapM. We agree, however, that this is hardly an
-  ;; improvement over the previous version. The only good thing is the
+  ;; thing is called mapM. That this is hardly an improvement over 
+  ;; the standard recursive version. The only good thing is the
   ;; lack of explicit recursion, but since we are schemers, we don't
   ;; care about it very much
   ;; (foldr (lambda (m n)
