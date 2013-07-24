@@ -1,7 +1,7 @@
 (module parser
   (many1 many sep-by sep-by1 either then bind word run str try succeed digit
          anychar parse char one-of skip-many skip-many1 named-bind <?> eof
-         number defparser >> >>= letter between)
+         number defparser >> >>= letter between many-until)
 
   (import chicken r5rs data-structures)
   (import utils state)
@@ -116,12 +116,16 @@
                                     (and (empty? result2) (empty? result1))))
                result1)))
 
+
   (defcomb ((between bra ket inside) state)
            ;; yeah, pretty ugly. It's **almost** equivalent to
            ;; (named-bind bra (x <- (many inside)) ket (succeed x)), but:
            ;; (parse (between (char #\a) (char #\b) letter) "ajkbcdeb")
            ;; returns "jk", while the named-bind version raises an
-           ;; unexpected EOF error.
+           ;; unexpected EOF error. The named bind version is good enough for
+           ;; e.g. comments in programming languages, since there are two
+           ;; delimiters (e.g # and newline) that cannot appear anywhere
+           ;; in the comment. Is it good enough for the general case?
            (let ((start (bra state)))
              (if (successful? start)
                (let loop ((prev start) (parsed '()))
@@ -132,7 +136,9 @@
                        (if (successful? middle)
                          (loop middle (cons (value middle) parsed))
                          middle)))))
-               (unexpected-input (car (input state)) state))))
+               (if (eof? (input state))
+                 (unexpected "EOF" state)
+                 (unexpected-input (car (input state)) state)))))
 
   ;; this is the return in the monad.
   (defcomb ((succeed v) state)
@@ -250,6 +256,15 @@
   ;; faster (but not as elegant as the Haskell mapM version)
   (define (str s)
     (foldr then (succeed s) (map-string char s)))
+
+  (defparser (many-until repeat limit)
+             (either
+               (then limit (succeed '()))
+               (named-bind 
+                 (x <- repeat)
+                 (xs <- (many-until repeat limit))
+                 (succeed (cons x xs)))))
+
 
   ;; matches if the input ends at the position
   (define (eof state)
