@@ -13,11 +13,10 @@ Features
 TODO
 ----
 
-* design some sample parsers
-* add support for evaluation
+* design some sample parsers [in progress!]
 * design some lexer for common languages
-* error reporting
-* improve the tests.
+* error reporting [in progress!]
+* improve the tests [in progress!]
 * documentation
 
 License
