@@ -1,4 +1,4 @@
-(module parse-test (run2-all)
+(module parse-test (run-all)
   (import r5rs chicken parser state)
 
   (define (basic-tests)
@@ -43,7 +43,7 @@
     (assert (equal? (value (parse word "abc ")) "abc"))
     (assert (not (successful? (parse word "1abc ")))))
 
-  (define (run2-all)
+  (define (run-all)
     (basic-tests)
     (word-test)
     (str-test)
