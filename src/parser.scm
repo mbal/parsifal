@@ -1,7 +1,8 @@
 (module parser
   (many1 many sep-by sep-by1 either then bind word run str try succeed digit
          anychar parse char one-of skip-many skip-many1 named-bind <?> eof
-         number defparser >> >>= letter between many-until)
+         number defparser >> >>= letter between many-until opt stringify
+         skip satisfy)
 
   (import chicken r5rs data-structures)
   (import utils state)
@@ -186,6 +187,7 @@
                (y <- (many p))
                (succeed (cons x y))))
 
+  (defparser (skip p) (then p (succeed '())))
 
   (defparser (skip-many p)
              (either
@@ -223,6 +225,9 @@
   (define anychar (satisfy (constantly #t)))
   (define digit (satisfy char-numeric?))
   (define (one-of l) (satisfy (lambda (x) (member x l))))
+
+  (define (opt p #!optional (default '()))
+    (either p (succeed default)))
 
   (define number 
     (<?> (lambda (state)
@@ -271,6 +276,12 @@
     (if (eof? (input state))
       state
       (unexpected-input (car (input state)) state)))
+
+  (defparser (stringify p)
+             (named-bind
+               (x <- p)
+               (succeed (list->string x))))
+
 
   ;; ------------------------------------
 
