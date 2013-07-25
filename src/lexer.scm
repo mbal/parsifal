@@ -50,9 +50,14 @@
                    (<?> (then (char #\\) escape) escape-error)
                    (satisfy (lambda (x) (and (not (char=? x #\"))
                                              (not (char=? x #\\)))))))
+
       (defparser identifier 
                  (after
-                   (stringify (then identifier-start (many identifier-letter)))
+                   (stringify 
+                     (named-bind
+                       (x <- identifier-start)
+                       (xs <- (many identifier-letter))
+                       (succeed (cons x xs))))
                    trim))
 
       (defparser dec-number
