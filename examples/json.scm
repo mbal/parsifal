@@ -1,4 +1,4 @@
-(module lexs (run-json data json)
+(module json (run-json)
   (import r5rs chicken)
   (import parser state lexer)
 
