@@ -2,7 +2,7 @@
   (many1 many sep-by sep-by1 either then bind word run str try succeed digit
          anychar parse char one-of skip-many skip-many1 named-bind <?> eof
          number defparser >> >>= letter between many-until opt stringify
-         skip satisfy)
+         skip satisfy none-of after)
 
   (import chicken r5rs data-structures)
   (import utils state)
@@ -117,6 +117,11 @@
                                     (and (empty? result2) (empty? result1))))
                result1)))
 
+  (defparser (after p1 p2)
+             (named-bind
+               (x <- p1)
+               p2
+               (succeed x)))
 
   (defcomb ((between bra ket inside) state)
            ;; yeah, pretty ugly. It's **almost** equivalent to
@@ -146,7 +151,7 @@
            (copy-state-except state value v))
 
   ;; bind :: Parser a -> (a -> Parser b) -> Parser b
-  (defcomb ((bind (& >>=) p1 f . more) state)
+  (defcomb ((bind (& >>=) p1 f) state)
            (let ((result1 (p1 state)))
              (if (successful? result1)
                (let ((result2 ((f (value result1)) result1)))
@@ -210,7 +215,7 @@
                state)))
 
   (define (sep-by1 p sep)
-    (named-bind 
+    (named-bind
       (x <- p)
       (xs <- (many (then sep p)))
       (succeed (cons x xs))))
@@ -225,6 +230,7 @@
   (define anychar (satisfy (constantly #t)))
   (define digit (satisfy char-numeric?))
   (define (one-of l) (satisfy (lambda (x) (member x l))))
+  (define (none-of l) (satisfy (lambda (x) (not (member x l)))))
 
   (define (opt p #!optional (default '()))
     (either p (succeed default)))
