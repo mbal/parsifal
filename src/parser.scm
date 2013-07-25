@@ -212,7 +212,8 @@
            (let ((result (p state)))
              (if (successful? result)
                result
-               state)))
+               (make-state (input state) (position state) (value state)
+                           #t (error result)))))
 
   (define (sep-by1 p sep)
     (named-bind
