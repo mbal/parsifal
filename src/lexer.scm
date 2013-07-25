@@ -3,7 +3,7 @@
   (import parser utils)
 
   (define escape-error "invalid escape sequence")
-  (define white-space (char #\space))
+  (define white-space (either (char #\space) (char #\newline)))
   (define new-line (char #\newline))
 
 
@@ -35,9 +35,15 @@
       (define escape (one-of escapable-characters))
 
       (define trim
-        (if skip-ws
-          (skip-many (either block-comment line-comment white-space))
-          (skip-many (either block-comment line-comment))))
+        (let* ((line? (not (string=? comment-line-start "")))
+               (block? (not (string=? comment-block-start ""))))
+          (cond ((and line? block? skip-ws)
+                 (skip-many (either line-comment block-comment white-space)))
+                ((and line? skip-ws)
+                 (skip-many (either line-comment white-space)))
+                ((and block? skip-ws)
+                 (skip-many (either block-comment white-space)))
+                (else (skip-many white-space)))))
 
       (defparser char-literal
                  (either
