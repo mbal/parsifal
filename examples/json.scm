@@ -1,21 +1,12 @@
 (module json (run-json)
   (import r5rs chicken)
-  (import parser state lexer basic-lexer)
+  (import parser basic-lexer)
 
   (defparser array
-    (between (char #\[) (char #\]) 
-             (named-bind
-               (x <- (sep-by1 json (then (char #\,) trim)))
-               trim
-               (succeed x))))
+    (inside-bracket (char #\[) (char #\]) (comma-sep json)))
 
   (defparser object
-             (between (char #\{) (char #\}) 
-                      (named-bind
-                        trim
-                        (x <- (sep-by1 pair (then (char #\,) trim)))
-                        trim
-                        (succeed x))))
+             (inside-bracket (char #\{) (char #\}) (comma-sep pair)))
 
   (define json 
     (either object string-literal number array))
@@ -43,7 +34,8 @@
   \"state\":    \"NY\",
   \"postalCode\":\"10021\"
   },
-  \"phoneNumber\": [{
+  \"phoneNumber\": [
+                    {
                      \"type\":\"home\",\"number\":\"212555-1234\"},
                      {\"type\":\"fax\",\"number\":\"646555-4567\"}
                      ]
