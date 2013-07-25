@@ -6,7 +6,6 @@
   (define white-space (either (char #\space) (char #\newline)))
   (define new-line (char #\newline))
 
-
   ;; defines a closure and returns a list of all the definitions in the
   ;; closure, in a list of 'name function pairs.
   (define-syntax export-definitions
@@ -37,13 +36,20 @@
       (define trim
         (let* ((line? (not (string=? comment-line-start "")))
                (block? (not (string=? comment-block-start ""))))
-          (cond ((and line? block? skip-ws)
-                 (skip-many (either (try line-comment) block-comment white-space)))
-                ((and line? skip-ws)
-                 (skip-many (either line-comment white-space)))
-                ((and block? skip-ws)
-                 (skip-many (either block-comment white-space)))
-                (else (skip-many white-space)))))
+          (if skip-ws
+            (cond ((and line? block?) 
+                   (skip-many (either 
+                                (try line-comment) 
+                                block-comment
+                                white-space)))
+                  (line? (skip-many (either line-comment white-space)))
+                  (block? (skip-many (either block-comment white-space))))
+            (cond ((and line? block?) 
+                   (skip-many (either 
+                                (try line-comment) 
+                                block-comment))
+                  (line? (skip-many either line-comment))
+                  (block? (skip-many block-comment)))))))
 
       (defparser char-literal
                  (either
@@ -88,8 +94,6 @@
                            (x <- p) 
                            trim
                            (succeed x)) (char #\,)))
-
-
 
       (list `(string-literal ,string-literal)
             `(dec-number ,dec-number)
