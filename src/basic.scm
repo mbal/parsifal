@@ -1,5 +1,5 @@
-(module basic-lexer (trim string-literal dec-number char-literal identifier)
-                          ;line-comment block-comment)
+(module basic-lexer (trim string-literal dec-number char-literal identifier
+                          inside-bracket comma-sep)
   (import chicken r5rs)
   (import lexer parser utils)
 
@@ -15,6 +15,7 @@
   (define string-literal (@ basic 'string-literal))
   (define dec-number (@ basic 'dec-number))
   (define char-literal (@ basic 'char-literal))
-  (define identifier (@ basic 'identifier)))
-  ;(define line-comment (@ basic 'line-comment))
-  ;(define block-comment (@ basic 'block-comment)))
+  (define identifier (@ basic 'identifier))
+  (define inside-bracket (@ basic 'inside-bracket))
+  (define comma-sep (@ basic 'comma-sep))
+)

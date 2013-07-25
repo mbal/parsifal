@@ -68,12 +68,32 @@
                    (stringify (between (char #\") (char #\") char-literal))
                    trim))
 
+      ;; run the parser p inside the brackets.
+      ;; Trims all the spaces after bopen before running p
+      ;; and trims spaces afterwards.
+      (defparser (inside-bracket bopen bclose p)
+                 (between bopen bclose
+                          (named-bind trim (x <- p) trim (succeed x))))
+
+      ;; runs the parser p, then looks for a comma, and repeat the process.
+      ;; trims both before and after comma.
+      (defparser (comma-sep p)
+                 (sep-by (named-bind 
+                           trim 
+                           (x <- p) 
+                           trim
+                           (succeed x)) (char #\,)))
+
+
+
       (list `(string-literal ,string-literal)
             `(dec-number ,dec-number)
             `(identifier ,identifier)
             `(char-literal ,char-literal)
             `(trim ,trim)
+            `(comma-sep ,comma-sep)
+            `(inside-bracket ,inside-bracket)
             `(line-comment ,line-comment)
             `(block-comment ,block-comment))
       ))
-    )
+  )
