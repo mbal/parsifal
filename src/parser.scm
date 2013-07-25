@@ -2,7 +2,7 @@
   (many1 many sep-by sep-by1 either then bind word run str try succeed digit
          anychar parse char one-of skip-many skip-many1 named-bind <?> eof
          number defparser >> >>= letter between many-until opt stringify
-         skip satisfy none-of after)
+         skip satisfy none-of after signed-number)
 
   (import chicken r5rs data-structures)
   (import utils state)
@@ -243,6 +243,12 @@
                (copy-state-except result value (list->number (value result)))
                result)))
          "expected number"))
+
+  (defparser signed-number
+             (named-bind
+               (s <- (opt (either (char #\+) (char #\-)) #\+))
+               (n <- number)
+               (succeed (if (char=? #\+ s) n (- n)))))
 
   (define (word state)
     (let ((result ((many1 letter) state)))

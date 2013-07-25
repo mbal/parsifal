@@ -38,7 +38,7 @@
         (let* ((line? (not (string=? comment-line-start "")))
                (block? (not (string=? comment-block-start ""))))
           (cond ((and line? block? skip-ws)
-                 (skip-many (either line-comment block-comment white-space)))
+                 (skip-many (either (try line-comment) block-comment white-space)))
                 ((and line? skip-ws)
                  (skip-many (either line-comment white-space)))
                 ((and block? skip-ws)
