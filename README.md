@@ -1,26 +1,31 @@
-parsifal
+Parsifal
 ========
 
-Parsifal is a library of parser combinators for Scheme (Chicken). Inspired by
-Haskell's Parsec.
+Parsifal is a library for parser combinators in (chicken) Scheme. The inspiration comes from Parsec, the famous Haskell library.
 
 Features
 --------
 
-* Implements most of the combinators in Haskell's Parsec
-* Provides syntax inspired by Haskell do-notation
+- Purely functional implementation
+- Implements most of the combinators in Parsec.
+- Easily creates lexers for programming languages
+- Can report user defined errors
+- Nice syntax, based on Haskell's DO notation, but also support for desugared
+  expressions, like `>>=`
 
-TODO
-----
+This library is intended for parsing all kinds of text, but the main support is
+for programming languages and data formats with programming-like syntax, such
+as JSON.
 
-* design some sample parsers [in progress!]
-* design some lexer for common languages
-* error reporting [in progress!]
-* improve the tests [in progress!]
-* documentation
+Sample usage & tests
+--------------------
+Examples are in the `examples/` folder, while test are in `src/test`.
+
+Documentation
+-------------
+You can find the whole Parsifal documentation in the [Wiki](https://github.com/mbal/parsifal/wiki/First-steps).
 
 License
 -------
-
 MIT License
 
