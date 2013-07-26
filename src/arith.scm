@@ -1,6 +1,6 @@
 ;;; miscellaneous parsers for arithmetic.
 
-(module arith (chainl chainl1 chainr1 chainr-)
+(module arith (chainl chainl1 chainr1 expr)
   (import chicken r5rs)
   (import parser state utils)
 
@@ -36,4 +36,37 @@
 
   (define (chainr p op perform default)
     (either (chainr1 p op perform) (succeed default)))
+
+
+  ;;; EXPR = FACT + EXPR | FACT
+  ;;; FACT = FACT * S | S
+  ;;; S = ( EXPR ) | NUMBER
+  ;;;
+  (defparser s
+     (either
+       (named-bind 
+         (char #\() 
+         (e <- expr)
+         (char #\))
+         (succeed e))
+       number))
+
+  (define fact 
+    (either
+      (try (named-bind
+        (f1 <- s)
+        (char #\*)
+        (f2 <- fact)
+        (succeed (list '* f1 f2))))
+      s))
+
+  (define expr
+    (either
+      (try (named-bind
+        (f1 <- fact)
+        (char #\+)
+        (f2 <- expr)
+        (succeed (list '+ f1 f2))))
+      fact))
+
 )
