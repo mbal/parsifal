@@ -6,12 +6,12 @@ Parsifal is a library for parser combinators in (chicken) Scheme. The inspiratio
 Features
 --------
 
-- Purely functional implementation
-- Implements most of the combinators in Parsec.
-- Easily creates lexers for programming languages
-- Can report user defined errors
-- Nice syntax, based on Haskell's DO notation, but also support for desugared
-  expressions, like `>>=`
+- Purely functional implementation;
+- Implements most of the combinators in Parsec;
+- Easily creates lexers for programming languages;
+- Can report user defined errors;
+- Nice syntax, based on Haskell's DO notation, but also support desugared
+  expressions, like `>>=`.
 
 This library is intended for parsing all kinds of text, but the main support is
 for programming languages and data formats with programming-like syntax, such
