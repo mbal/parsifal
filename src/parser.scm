@@ -1,8 +1,9 @@
 (module parser
   (many1 many sep-by sep-by1 either then bind word run str try succeed digit
          anychar parse char one-of skip-many skip-many1 named-bind <?> eof
-         number defparser >> >>= letter between many-until opt stringify
-         skip satisfy none-of after signed-number)
+         number defparser >> >>= letter between many-until opt stringify skip
+         satisfy none-of after signed-number chainr1 chainr chainl1 chainl) 
+
 
   (import chicken r5rs data-structures)
   (import utils state)
@@ -225,6 +226,38 @@
     (either (sep-by1 p sep)
             (succeed '())))
 
+  ;; parses p, and, as long as there is a binary operation op, reads it and
+  ;; another p, then applies `perform` on the two values. The operator
+  ;; should associate to the left
+  (define (chainl1 p op perform)
+    (begin
+      (define (func prev) 
+        (either (named-bind op (b <- p) (func (perform prev b)))
+                (succeed prev)))
+      (named-bind
+        (a <- p)
+        (in <- (func a))
+        (succeed in))))
+
+  ;; as chainl1, but returns a default if there's no initial match
+  (define (chainl p op perform default)
+    (either (chainl1 p op perform) (succeed default)))
+
+  ;;; accumulates p to the right. While it parses the sequence op p, it 
+  ;;; traverse the string. When there are no more op, it rewinds itself,
+  ;;; folding back the results of p, applying `perform`.
+  (define (chainr1 p op perform)
+    (named-bind
+      (a <- p)
+      (either
+        (named-bind
+          op
+          (b <- (chainr1 p op perform))
+          (succeed (perform a b)))
+        (succeed a))))
+
+  (define (chainr p op perform default)
+    (either (chainr1 p op perform) (succeed default)))
   ;; simpler derived parsers
   (define (char c) (satisfy (lambda (x) (char=? c x))))
   (define letter (satisfy char-alphabetic?))
