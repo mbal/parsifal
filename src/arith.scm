@@ -13,8 +13,8 @@
 ;      (skip-many (char #\space))
 ;      (succeed (+ a b))))
 ;
-  ;;; EXPR = FACT + EXPR | FACT
-  ;;; FACT = S * FACT | S
+  ;;; EXPR = FACT + EXPR | FACT - EXPR | FACT
+  ;;; FACT = S * FACT | S / FACT | S
   ;;; S = ( EXPR ) | NUMBER
   ;;;
   (defparser s

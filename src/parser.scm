@@ -34,7 +34,7 @@
   ;; It's possible to define a parser through the . notation, which means
   ;; that the parser will `reduce' (fold) the body of the function over the 
   ;; list of parameters.
-  ;; For example, (>> a b c d e) == (fold >> (a b c d e)) ==
+  ;; For example, (>> a b c d e) == (reduce2 >> (a b c d e)) ==
   ;;              (>> (>> (>> (>> a b) c) d) e)
   (define-syntax defcomb
     (syntax-rules (&)
@@ -208,7 +208,7 @@
                (skip-many p)))
 
   ;; (try p) behaves like p, but, on failing, it pretends that nothing
-  ;; happened.
+  ;; happened (i.e. that the parser hasn't read any character)
   (defcomb ((try p) state)
            (let ((result (p state)))
              (if (successful? result)
@@ -243,9 +243,9 @@
   (define (chainl p op perform default)
     (either (chainl1 p op perform) (succeed default)))
 
-  ;;; accumulates p to the right. While it parses the sequence op p, it 
-  ;;; traverse the string. When there are no more op, it rewinds itself,
-  ;;; folding back the results of p, applying `perform`.
+  ;; accumulates p to the right. While it parses the sequence op p, it 
+  ;; traverse the string. When there are no more op, it rewinds itself,
+  ;; folding back the results of p, applying `perform`.
   (define (chainr1 p op perform)
     (named-bind
       (a <- p)
@@ -258,6 +258,7 @@
 
   (define (chainr p op perform default)
     (either (chainr1 p op perform) (succeed default)))
+
   ;; simpler derived parsers
   (define (char c) (satisfy (lambda (x) (char=? c x))))
   (define letter (satisfy char-alphabetic?))
