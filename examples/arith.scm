@@ -1,18 +1,7 @@
-(module arith (add-op)
+(module arith ()
   (import chicken r5rs)
   (import parser state utils)
 
-;  (define (add-op p q)
-;    (named-bind
-;      (skip-many (char #\space))
-;      (a <- p)
-;      (skip-many (char #\space))
-;      (char #\+)
-;      (skip-many (char #\space))
-;      (b <- p)
-;      (skip-many (char #\space))
-;      (succeed (+ a b))))
-;
   ;;; EXPR = FACT + EXPR | FACT - EXPR | FACT
   ;;; FACT = S * FACT | S / FACT | S
   ;;; S = ( EXPR ) | NUMBER
@@ -44,5 +33,4 @@
         (f2 <- expr)
         (succeed (list '+ f1 f2))))
       fact))
-
 )
