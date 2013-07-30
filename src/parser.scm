@@ -2,7 +2,8 @@
   (many1 many sep-by sep-by1 either then bind word run str try succeed digit
          anychar parse char one-of skip-many skip-many1 named-bind <?> eof
          number defparser >> >>= letter between many-until opt stringify skip
-         satisfy none-of after signed-number chainr1 chainr chainl1 chainl) 
+         satisfy none-of after signed-number chainr1 chainr chainl1 chainl
+         chainl1-exp chainl-exp chainr-exp chainr1-exp)
 
 
   (import chicken r5rs data-structures)
