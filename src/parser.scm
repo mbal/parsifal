@@ -226,10 +226,46 @@
     (either (sep-by1 p sep)
             (succeed '())))
 
-  ;; parses p, and, as long as there is a binary operation op, reads it and
-  ;; another p, then applies `perform` on the two values. The operator
-  ;; should associate to the left
-  (define (chainl1 p op perform)
+  ;; parses p, and, as long as there is a binary operation op, this parser
+  ;; reads it and another p, then applies the operator returned by the
+  ;; parser op on the two values returned by the successive invocation of p.
+  ;; The operator should be left associative.
+  ;; Similar to chainl1-exp, but the operation is implicit from the parser.
+  (define (chainl1 p op)
+    (begin
+      (define (func prev) 
+        (either (named-bind 
+                  (o <- op) (b <- p) (func (o prev b)))
+                (succeed prev)))
+      (named-bind
+        (a <- p)
+        (in <- (func a))
+        (succeed in))))
+
+  ;; as chainl1, but returns a default if there's no initial match
+  (define (chainl p op default)
+    (either (chainl1 p op) (succeed default)))
+
+  ;; accumulates p to the right. While it parses the sequence op p, it 
+  ;; traverse the string. When there are no more op, it rewinds itself,
+  ;; folding back the results of p, applying `perform`.
+  (define (chainr1 p op)
+    (named-bind
+      (a <- p)
+      (either
+        (named-bind
+          (o <- op)
+          (b <- (chainr1 p op))
+          (succeed (o a b)))
+        (succeed a))))
+
+  (define (chainr p op default)
+    (either (chainr1 p op) (succeed default)))
+
+  ;; EXPLIT VERSIONS of chainL/R. They are the same as the implicit version
+  ;; but they take another parameter, which is the operator to apply to
+  ;; the matches.
+  (define (chainl1-exp p op perform)
     (begin
       (define (func prev) 
         (either (named-bind op (b <- p) (func (perform prev b)))
@@ -239,25 +275,21 @@
         (in <- (func a))
         (succeed in))))
 
-  ;; as chainl1, but returns a default if there's no initial match
-  (define (chainl p op perform default)
-    (either (chainl1 p op perform) (succeed default)))
+  (define (chainl-exp p op perform default)
+    (either (chainl1-exp p op perform) (succeed default)))
 
-  ;; accumulates p to the right. While it parses the sequence op p, it 
-  ;; traverse the string. When there are no more op, it rewinds itself,
-  ;; folding back the results of p, applying `perform`.
-  (define (chainr1 p op perform)
+  (define (chainr1-exp p op perform)
     (named-bind
       (a <- p)
       (either
         (named-bind
           op
-          (b <- (chainr1 p op perform))
+          (b <- (chainr1-exp p op perform))
           (succeed (perform a b)))
         (succeed a))))
 
-  (define (chainr p op perform default)
-    (either (chainr1 p op perform) (succeed default)))
+  (define (chainr-exp p op perform default)
+    (either (chainr1-exp p op perform) (succeed default)))
 
   ;; simpler derived parsers
   (define (char c) (satisfy (lambda (x) (char=? c x))))
