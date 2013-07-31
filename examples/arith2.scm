@@ -18,7 +18,6 @@
 
   ;; We adopt the (usual) convention that power is associative to the right.
   (define exponentiation (chainr1 s exp-op))
-
   (define factor (chainl1 exponentiation mul-op))
   (define expr (chainl1 factor add-op))
   

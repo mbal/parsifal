@@ -263,7 +263,7 @@
   (define (chainr p op default)
     (either (chainr1 p op) (succeed default)))
 
-  ;; EXPLIT VERSIONS of chainL/R. They are the same as the implicit version
+  ;; EXPLICIT VERSIONS of chainL/R. They are the same as the implicit version
   ;; but they take another parameter, which is the operator to apply to
   ;; the matches.
   (define (chainl1-exp p op perform)
