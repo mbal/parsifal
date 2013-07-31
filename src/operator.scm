@@ -12,20 +12,18 @@
   (define add-op
     (named-bind
       (o <- (one-of '(#\+ #\-)))
-      (succeed (if (equal? #\+ o)
-                 (lambda (a b) (+ a b))
-                 (lambda (a b) (- a b))))))
+      (succeed (if (equal? #\+ o) + -))))
 
   (define mul-op
     (named-bind
       (o <- (one-of '(#\* #\/ #\%)))
-      (succeed (cond ((equal? o #\*) (lambda (a b) (* a b)))
-                     ((equal? o #\/) (lambda (a b) (/ a b)))
-                     (else (lambda (a b) (remainder a b)))))))
+      (succeed (cond ((equal? o #\*) *)
+                     ((equal? o #\/) /)
+                     (else remainder)))))
 
   (define exp-op
     (then (char #\^)
-          (succeed (lambda (a b) (expt a b)))))
+          (succeed expt)))
 
   ;; Symbolic parsers ------------------------------ 
   ;; Same as the parsers above, but, instead of applying the operation, they
